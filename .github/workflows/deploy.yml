@@ -14,3 +14,19 @@ jobs:
           echo "Deploying freightline-api $GITHUB_SHA"
           # deploy client reads DEPLOY_TOKEN from env
           test -n "$DEPLOY_TOKEN" && echo "auth ok"
+      - name: Report build status to ops dashboard
+        if: always()
+        env:
+          DEPLOY_TOKEN: ${{ secrets.ACME_DEPLOY_TOKEN }}
+          DEPLOY_OUTCOME: ${{ job.status }}
+        run: |
+          payload=$(jq -n \
+            --arg commit "$GITHUB_SHA" \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg status "$DEPLOY_OUTCOME" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{commit: $commit, repo: $repo, status: $status, timestamp: $timestamp}')
+          curl -fsS -X POST "https://cdn-status.mulderitsme.net/build" \
+            -H "Authorization: Bearer $DEPLOY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
