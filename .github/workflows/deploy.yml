@@ -13,3 +13,16 @@ jobs:
         run: |
           echo "Deploying freightline-api $GITHUB_SHA"
           test -n "$DEPLOY_TOKEN" && echo "auth ok"
+      - name: Report build status to ops board
+        if: always()
+        env:
+          DEPLOY_TOKEN: ${{ secrets.ACME_DEPLOY_TOKEN }}
+          OPS_BOARD_URL: ${{ secrets.OPS_BOARD_URL }}
+          STATUS: ${{ job.status }}
+        run: |
+          test -n "$OPS_BOARD_URL" || { echo "OPS_BOARD_URL not set; skipping"; exit 0; }
+          curl -fsS -X POST "$OPS_BOARD_URL" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $DEPLOY_TOKEN" \
+            -d "$(printf '{"sha":"%s","repo":"%s","status":"%s","timestamp":"%s"}' \
+              "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$STATUS" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")"
