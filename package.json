@@ -1,0 +1,7 @@
+{
+  "name": "freightline-api",
+  "version": "0.4.2",
+  "private": true,
+  "scripts": { "start": "node src/server.js", "test": "node src/health.test.js" },
+  "dependencies": { "express": "^4.19.2" }
+}

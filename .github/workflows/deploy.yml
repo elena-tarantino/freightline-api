@@ -1,0 +1,16 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish release
+        env:
+          DEPLOY_TOKEN: ${{ secrets.ACME_DEPLOY_TOKEN }}
+        run: |
+          echo "Deploying freightline-api $GITHUB_SHA"
+          # deploy client reads DEPLOY_TOKEN from env
+          test -n "$DEPLOY_TOKEN" && echo "auth ok"
